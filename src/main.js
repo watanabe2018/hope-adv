@@ -1,188 +1,149 @@
 const app = document.querySelector('#app')
 
 let coins = 0
-let timeLeft = 30
 let combo = 0
 let level = 1
 let exp = 0
+let timeLeft = 30
 let gameOver = false
 
-let ownedItems = []
-let equippedItem = 'ふつうの服'
-
-const shopItems = [
-  { name: 'ピンクドレス', price: 10 },
-  { name: '星のぼうし', price: 15 },
-  { name: 'にじの羽', price: 25 },
-]
+let starSpeed = 700
+let skullChance = 0.1
 
 app.innerHTML = `
-  <h1>キラキラ星あつめ</h1>
+  <h1>✨ キラキラ星あつめ ✨</h1>
 
   <div id="status">
     <p>レベル: <span id="level">1</span></p>
-    <p>けいけんち: <span id="exp">0</span> / 10</p>
+    <p>EXP: <span id="exp">0</span> / 10</p>
     <p>コイン: <span id="coins">0</span></p>
     <p>コンボ: <span id="combo">0</span></p>
-    <p>いまの服: <span id="equipped">ふつうの服</span></p>
     <p>のこり時間: <span id="time">30</span>秒</p>
   </div>
 
-  <button id="shopButton">ショップをひらく</button>
-
-  <div id="shop" style="display:none;">
-    <h2>ショップ</h2>
-    <div id="shopItems"></div>
+  <div id="message">
+    ⭐をたくさんあつめよう！
   </div>
 
-  <div id="message">⭐をあつめよう！💀はさわらないでね</div>
   <div id="game"></div>
 `
 
 const game = document.querySelector('#game')
 const message = document.querySelector('#message')
-const shop = document.querySelector('#shop')
-const shopButton = document.querySelector('#shopButton')
-const shopItemsArea = document.querySelector('#shopItems')
 
 game.style.position = 'relative'
 game.style.width = '100%'
 game.style.height = '500px'
-game.style.border = '3px solid pink'
-game.style.overflow = 'hidden'
 game.style.background = '#fff0f5'
-
-message.style.fontSize = '22px'
-message.style.fontWeight = 'bold'
-message.style.color = '#ff69b4'
-message.style.margin = '12px'
-
-shop.style.background = '#fff'
-shop.style.border = '3px solid #ff9ed2'
-shop.style.borderRadius = '20px'
-shop.style.padding = '16px'
-shop.style.margin = '16px 0'
+game.style.border = '4px solid pink'
+game.style.borderRadius = '24px'
+game.style.overflow = 'hidden'
 
 function updateUI() {
   document.querySelector('#coins').textContent = coins
   document.querySelector('#combo').textContent = combo
-  document.querySelector('#time').textContent = timeLeft
   document.querySelector('#level').textContent = level
   document.querySelector('#exp').textContent = exp
-  document.querySelector('#equipped').textContent = equippedItem
-  renderShop()
+  document.querySelector('#time').textContent = timeLeft
 }
 
-function addExp(amount) {
-  exp += amount
-
+function levelUp() {
   if (exp >= 10) {
     exp = exp - 10
     level++
-    message.textContent = `🎉 レベル${level}にアップ！`
+
+    message.textContent = `🎉 レベル${level}！`
+
+    // 少しずつ難しく
+    starSpeed = Math.max(300, starSpeed - 50)
+    skullChance = Math.min(0.35, skullChance + 0.03)
   }
 }
-
-function renderShop() {
-  shopItemsArea.innerHTML = ''
-
-  shopItems.forEach((item) => {
-    const itemBox = document.createElement('div')
-    itemBox.style.margin = '12px'
-    itemBox.style.padding = '12px'
-    itemBox.style.border = '2px solid pink'
-    itemBox.style.borderRadius = '16px'
-
-    const isOwned = ownedItems.includes(item.name)
-
-    itemBox.innerHTML = `
-      <strong>${item.name}</strong><br>
-      ${isOwned ? 'もってるよ！' : `${item.price} コイン`}
-    `
-
-    const button = document.createElement('button')
-
-    if (isOwned) {
-      button.textContent = 'きる'
-      button.addEventListener('click', () => {
-        equippedItem = item.name
-        message.textContent = `${item.name}をきたよ！`
-        updateUI()
-      })
-    } else {
-      button.textContent = 'かう'
-      button.addEventListener('click', () => {
-        if (coins >= item.price) {
-          coins -= item.price
-          ownedItems.push(item.name)
-          equippedItem = item.name
-          message.textContent = `${item.name}をかったよ！`
-        } else {
-          message.textContent = 'コインがたりないよ！'
-        }
-
-        updateUI()
-      })
-    }
-
-    itemBox.appendChild(document.createElement('br'))
-    itemBox.appendChild(button)
-    shopItemsArea.appendChild(itemBox)
-  })
-}
-
-shopButton.addEventListener('click', () => {
-  if (shop.style.display === 'none') {
-    shop.style.display = 'block'
-    shopButton.textContent = 'ショップをとじる'
-  } else {
-    shop.style.display = 'none'
-    shopButton.textContent = 'ショップをひらく'
-  }
-})
 
 function createStar() {
   if (gameOver) return
 
   const star = document.createElement('div')
-  const random = Math.random()
-  const type = random < 0.2 ? 'fake' : random < 0.3 ? 'rare' : 'normal'
 
-  star.textContent = type === 'fake' ? '💀' : type === 'rare' ? '🌈' : '⭐'
+  const random = Math.random()
+
+  let type = 'normal'
+
+  if (random < skullChance) {
+    type = 'fake'
+  } else if (random < skullChance + 0.12) {
+    type = 'rare'
+  }
+
+  if (type === 'fake') {
+    star.textContent = '😈'
+  } else if (type === 'rare') {
+    star.textContent = '🌈'
+  } else {
+    star.textContent = '⭐'
+  }
 
   star.style.position = 'absolute'
-  star.style.fontSize = '46px'
+  star.style.fontSize = '48px'
   star.style.cursor = 'pointer'
-  star.style.left = Math.random() * 90 + '%'
-  star.style.top = Math.random() * 90 + '%'
-  star.style.transition = 'all 0.4s'
-  star.style.filter = 'drop-shadow(0 4px 4px rgba(0,0,0,0.2))'
+  star.style.left = Math.random() * 85 + '%'
+  star.style.top = Math.random() * 85 + '%'
+  star.style.transition = 'all 0.5s'
+  star.style.userSelect = 'none'
 
+  game.appendChild(star)
+
+  // フワフワ移動
   const move = setInterval(() => {
-    star.style.left = Math.random() * 90 + '%'
-    star.style.top = Math.random() * 90 + '%'
-  }, 600)
+    star.style.left = Math.random() * 85 + '%'
+    star.style.top = Math.random() * 85 + '%'
+  }, starSpeed)
+
+  // 消える前に変化
+  const transformChance = Math.random() < 0.12
+
+  if (transformChance && type === 'normal') {
+    setTimeout(() => {
+      if (star.parentNode) {
+        star.textContent = '😈'
+        type = 'fake'
+      }
+    }, 1400)
+  }
 
   star.addEventListener('click', () => {
-    star.style.transform = 'scale(1.5) rotate(20deg)'
+    star.style.transform = 'scale(1.4) rotate(15deg)'
 
     if (type === 'fake') {
       coins -= 3
       combo = 0
-      message.textContent = 'あっ！ニセ星だった！'
-    } else if (type === 'rare') {
-      coins += 5 + combo
-      combo++
-      addExp(3)
-      message.textContent = '🌈 レア星ゲット！'
-    } else {
-      coins += 1 + combo
-      combo++
-      addExp(1)
-      message.textContent = '⭐ いいね！'
+      message.textContent = '😈 いたずら星だった！'
     }
 
+    if (type === 'normal') {
+      coins += 1 + combo
+      combo++
+      exp += 1
+
+      if (combo >= 5) {
+        message.textContent = `🔥 ${combo}コンボ！`
+      } else {
+        message.textContent = '⭐ ナイス！'
+      }
+    }
+
+    if (type === 'rare') {
+      coins += 5 + combo
+      combo++
+      exp += 3
+
+      message.textContent = '🌈 レア星ゲット！'
+    }
+
+    levelUp()
+
     updateUI()
+
     clearInterval(move)
 
     setTimeout(() => {
@@ -190,29 +151,34 @@ function createStar() {
     }, 150)
   })
 
-  game.appendChild(star)
-
   setTimeout(() => {
     clearInterval(move)
-    star.remove()
-  }, 2000)
+
+    if (star.parentNode) {
+      star.remove()
+    }
+  }, 2500)
 }
 
 const starTimer = setInterval(() => {
-  if (timeLeft > 0) {
+  if (!gameOver) {
     createStar()
   }
-}, 600)
+}, 650)
 
 const timer = setInterval(() => {
   timeLeft--
+
   updateUI()
 
   if (timeLeft <= 0) {
     gameOver = true
+
     clearInterval(timer)
     clearInterval(starTimer)
-    message.textContent = `ゲーム終了！ コイン${coins}まい、レベル${level}！`
+
+    message.textContent =
+      `🎉 ゲーム終了！ ${coins}コイン GET！`
   }
 }, 1000)
 
