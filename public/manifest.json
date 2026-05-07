@@ -1,0 +1,9 @@
+{
+  "name": "キラキラ星あつめ",
+  "short_name": "星あつめ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffe6f2",
+  "theme_color": "#ff9ed2",
+  "icons": []
+}
