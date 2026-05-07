@@ -113,6 +113,13 @@ function createStar() {
 
   star.addEventListener('click', () => {
     star.style.transform = 'scale(1.4) rotate(15deg)'
+    const rect = star.getBoundingClientRect()
+    const gameRect = game.getBoundingClientRect()
+
+    createSparkles(
+      rect.left - gameRect.left,
+      rect.top - gameRect.top
+    )
 
     if (type === 'fake') {
       coins -= 3
@@ -183,3 +190,37 @@ const timer = setInterval(() => {
 }, 1000)
 
 updateUI()
+
+function createSparkles(x, y) {
+  for (let i = 0; i < 10; i++) {
+    const sparkle = document.createElement('div')
+
+    sparkle.textContent = '✨'
+
+    sparkle.style.position = 'absolute'
+    sparkle.style.left = x + 'px'
+    sparkle.style.top = y + 'px'
+    sparkle.style.fontSize = '24px'
+    sparkle.style.pointerEvents = 'none'
+    sparkle.style.transition = 'all 0.8s ease-out'
+
+    game.appendChild(sparkle)
+
+    const angle = Math.random() * Math.PI * 2
+    const distance = 50 + Math.random() * 50
+
+    const moveX = Math.cos(angle) * distance
+    const moveY = Math.sin(angle) * distance
+
+    requestAnimationFrame(() => {
+      sparkle.style.transform =
+        `translate(${moveX}px, ${moveY}px) scale(0.5)`
+
+      sparkle.style.opacity = '0'
+    })
+
+    setTimeout(() => {
+      sparkle.remove()
+    }, 800)
+  }
+}
