@@ -85,14 +85,14 @@ export function startFruitCourse({ courseNumber, totalCourses, onFinish }) {
 
     item.className = 'falling-fruit'
 
-    const startX = 8 + Math.random() * 84
-    const speed = 1.0 + Math.random() * 3.2
-    const drift1 = -120 + Math.random() * 240
-    const drift2 = -100 + Math.random() * 200
+    const startX = 20 + Math.random() * 60
+    const speed = 1.6 + Math.random() * 2.6
+    const drift1 = -70 + Math.random() * 140
+    const drift2 = -60 + Math.random() * 120
 
     item.style.left = `${startX}%`
-    item.style.top = '-80px'
-    item.style.opacity = '0'
+    item.style.top = '-40px'
+    item.style.opacity = '1'
     item.style.transform = 'translateX(0px) rotate(0deg)'
     item.style.transition = `
       top ${speed}s linear,
