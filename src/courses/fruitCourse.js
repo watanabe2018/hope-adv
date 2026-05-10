@@ -107,7 +107,7 @@ export function startFruitCourse({ courseNumber, totalCourses, onFinish }) {
 
     requestAnimationFrame(() => {
       item.style.opacity = '1'
-      item.style.top = '92%'
+      item.style.top = '110%'
       item.style.transform = `translateX(${drift1}px) rotate(${rotate1}deg)`
     })
 
@@ -164,16 +164,16 @@ export function startFruitCourse({ courseNumber, totalCourses, onFinish }) {
       clearInterval(check)
 
       if (item.parentNode) {
+        item.remove()
+
         if (!isBomb) {
           misses++
           combo = 0
           message.textContent = 'おしい！'
+          updateUI()
         }
-
-        item.remove()
-        updateUI()
       }
-    }, speed * 1000 + 250)
+    }, speed * 1000 + 100)
   }
 
   function finishCourse() {
