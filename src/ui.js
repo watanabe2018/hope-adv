@@ -1,32 +1,135 @@
-import { state, addReward } from './state.js'
+import {
+  state,
+  colorPieces,
+  getColorCount,
+  getWorldMessage,
+  isStoryComplete,
+} from './state.js'
 
 export const app = document.querySelector('#app')
 
-export function renderLayout(content) {
-  app.innerHTML = `
-    <h1>✨ きらきらコース ✨</h1>
+export function renderTown() {
+  const hasRed = state.colors.red
+  const hasBlue = state.colors.blue
+  const hasYellow = state.colors.yellow
+  const hasGreen = state.colors.green
+  const hasPurple = state.colors.purple
 
-    <div class="status">
-      <span>🪙 コイン: <b>${state.coins}</b></span>
-      <span>⭐ レベル: <b>${state.level}</b></span>
-      <span>けいけんち: <b>${state.exp}</b>/10</span>
+  return `
+    <div class="town">
+      <div class="sky ${hasBlue ? 'colored-sky' : ''}">
+        <div class="sun ${hasYellow ? 'colored-sun' : ''}">☀️</div>
+        <div class="cloud">☁️</div>
+      </div>
+
+      <div class="town-ground">
+        <div class="tree ${hasGreen ? 'colored-tree' : ''}">
+          <div class="tree-top">●</div>
+          <div class="tree-trunk">▌</div>
+        </div>
+
+        <div class="house">
+          <div class="roof ${hasRed ? 'colored-roof' : ''}"></div>
+          <div class="house-body">
+            <div class="window ${hasYellow ? 'colored-window' : ''}"></div>
+            <div class="door"></div>
+          </div>
+        </div>
+
+        <div class="character ${hasPurple ? 'colored-character' : ''}">
+          <div class="face">🙂</div>
+          <div class="body">⬟</div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+export function renderColorCollection() {
+  return `
+    <div class="color-collection">
+      ${colorPieces
+        .map((piece) => {
+          const found = state.colors[piece.key]
+          return `
+            <span class="color-piece ${found ? 'found' : 'missing'}">
+              ${found ? piece.emoji : '⚪'}
+              <small>${piece.name}</small>
+            </span>
+          `
+        })
+        .join('')}
+    </div>
+  `
+}
+
+export function renderGauge() {
+  const percent = Math.min(100, state.colorPower)
+
+  return `
+    <div class="gauge-area">
+      <div class="gauge-label">いろパワー ${percent} / 100</div>
+      <div class="gauge">
+        <div class="gauge-fill" style="width: ${percent}%"></div>
+      </div>
+    </div>
+  `
+}
+
+export function renderHomeLayout(content) {
+  app.innerHTML = `
+    <h1>🎨 いろをとりもどそう</h1>
+
+    <div class="world-card">
+      <div class="world-message">${getWorldMessage()}</div>
+      <div class="world-progress">
+        もどったいろ: ${getColorCount()} / ${colorPieces.length}
+      </div>
+      ${renderTown()}
+      ${renderGauge()}
+      ${renderColorCollection()}
     </div>
 
     ${content}
   `
 }
 
-export function showResult(title, rewardCoins, rewardExp, onBackHome) {
-  addReward(rewardCoins, rewardExp)
+export function renderGameLayout(content) {
+  app.innerHTML = `
+    <h1>🎨 いろをとりもどそう</h1>
+    ${content}
+  `
+}
 
-  renderLayout(`
-    <div class="card">
-      <h2>${title}</h2>
-      <p>🪙 ${rewardCoins} コイン ゲット！</p>
-      <p>⭐ けいけんち ${rewardExp} ゲット！</p>
-      <button id="backHome">コースにもどる</button>
-    </div>
-  `)
+export function showJourneyResult(totalPower, unlockedColors, onBackHome) {
+  if (isStoryComplete()) {
+    renderHomeLayout(`
+      <div class="card ending-card">
+        <h2>🌈 ぜんぶのいろが もどった！</h2>
+        <p>まちが カラフルに なったよ。</p>
+        <p class="big-emoji">🎉🌈✨</p>
+        <button id="backHome">ホームにもどる</button>
+      </div>
+    `)
+  } else {
+    renderHomeLayout(`
+      <div class="card">
+        <h2>よくがんばったね！</h2>
+        <p class="reward-color">いろパワー +${totalPower}</p>
+        ${
+          unlockedColors.length > 0
+            ? unlockedColors
+                .map(
+                  (color) =>
+                    `<p class="reward-color">${color.emoji} ${color.name}のいろが もどった！</p>`
+                )
+                .join('')
+            : '<p>もうすこしで いろが もどりそう！</p>'
+        }
+        <button id="backHome">ホームにもどる</button>
+      </div>
+    `)
+  }
 
   document.querySelector('#backHome').addEventListener('click', onBackHome)
 }

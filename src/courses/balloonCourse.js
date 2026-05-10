@@ -8,37 +8,34 @@ export function startBalloonCourse({ courseNumber, totalCourses, onFinish }) {
   let gameOver = false
 
   const balloonTypes = [
-    { key: 'red', name: 'あか', icon: '🔴🎈' },
-    { key: 'blue', name: 'あお', icon: '🔵🎈' },
-    { key: 'yellow', name: 'きいろ', icon: '🟡🎈' },
-    { key: 'green', name: 'みどり', icon: '🟢🎈' },
-    { key: 'gold', name: 'きんいろ', icon: '🌟🎈' },
+    { key: 'red', name: 'あか', icon: '🔴' },
+    { key: 'blue', name: 'あお', icon: '🔵' },
+    { key: 'yellow', name: 'きいろ', icon: '🟡' },
+    { key: 'green', name: 'みどり', icon: '🟢' },
+    { key: 'gold', name: 'きん', icon: '🌟' },
   ]
 
   let targetType = pickTargetType()
 
-  renderGameLayout(`
-    <div class="card">
-      <p class="course-count">コース ${courseNumber} / ${totalCourses}</p>
-      <h2>🎈 ふうせんミッション</h2>
 
-      <div class="mission-box">
-        <div>おだい</div>
-        <div class="mission-text">
-          <span id="targetIcon">${targetType.icon}</span>
-          <span id="targetName">${targetType.name}</span> のふうせんを わろう！
-        </div>
-      </div>
+renderGameLayout(`
+  <div class="card">
+    <p class="course-count">コース ${courseNumber} / ${totalCourses}</p>
+    <h2>🎈 ふうせんミッション</h2>
 
-      <p>ポイント: <b id="points">0</b></p>
-      <p>コンボ: <b id="combo">0</b></p>
-      <p>のこりじかん: <b id="time">25</b>びょう</p>
+    <p>ポイント: <b id="points">0</b> / コンボ: <b id="combo">0</b></p>
+    <p>のこり: <b id="time">25</b></p>
 
-      <div id="message">おだいと おなじ ふうせんを タップ！</div>
-      <div id="game"></div>
+    <div id="message">おなじマークをタップ！</div>
+
+    <div class="target-bar">
+      <span class="target-label">これ！</span>
+      <span id="targetIcon" class="target-icon">${targetType.icon}</span>
     </div>
-  `)
 
+    <div id="game"></div>
+  </div>
+`)
   const game = document.querySelector('#game')
   const message = document.querySelector('#message')
 
@@ -51,19 +48,17 @@ export function startBalloonCourse({ courseNumber, totalCourses, onFinish }) {
     document.querySelector('#combo').textContent = combo
     document.querySelector('#time').textContent = timeLeft
     document.querySelector('#targetIcon').textContent = targetType.icon
-    document.querySelector('#targetName').textContent = targetType.name
   }
 
   function changeMission() {
     if (gameOver) return
 
     const oldKey = targetType.key
-
     do {
       targetType = pickTargetType()
     } while (targetType.key === oldKey)
 
-    message.textContent = `おだいチェンジ！ ${targetType.name} をねらってね`
+    message.textContent = 'おだいチェンジ！'
     updateUI()
   }
 
@@ -96,17 +91,23 @@ export function startBalloonCourse({ courseNumber, totalCourses, onFinish }) {
     const balloon = document.createElement('div')
     const type = balloonTypes[Math.floor(Math.random() * balloonTypes.length)]
 
-    const isBomb = Math.random() < 0.12
+    const isBomb = Math.random() < 0.1
     const isSmall = Math.random() < 0.3
     const isBig = !isSmall && Math.random() < 0.25
 
     balloon.textContent = isBomb ? '💣' : type.icon
     balloon.dataset.type = isBomb ? 'bomb' : type.key
 
-    const fontSize = isSmall ? 34 : isBig ? 62 : 48
-    const baseSpeed = isSmall ? 2.2 : isBig ? 3.2 : 2.7
-    const speed = baseSpeed + Math.random() * 1.2
-    const drift = -45 + Math.random() * 90
+    const fontSize = isSmall ? 34 : isBig ? 68 : 50
+
+    // 数字が小さいほど速い。かなり幅を持たせる
+    let speed = 1.4 + Math.random() * 3.0
+
+    if (isSmall) speed *= 0.85
+    if (isBig) speed *= 1.15
+
+    const drift = -160 + Math.random() * 320
+    const rotate = -35 + Math.random() * 70
 
     balloon.style.position = 'absolute'
     balloon.style.fontSize = `${fontSize}px`
@@ -127,10 +128,18 @@ export function startBalloonCourse({ courseNumber, totalCourses, onFinish }) {
 
     game.appendChild(balloon)
 
+    const drift1 = -160 + Math.random() * 320
+    const drift2 = -120 + Math.random() * 240
+
     requestAnimationFrame(() => {
       balloon.style.top = '-15%'
-      balloon.style.transform = `translateX(${drift}px) rotate(${Math.random() * 40 - 20}deg)`
+      balloon.style.transform = `translateX(${drift1}px) rotate(${rotate}deg)`
     })
+
+    setTimeout(() => {
+      if (!balloon.parentNode) return
+      balloon.style.transform = `translateX(${drift2}px) rotate(${rotate}deg)`
+    }, (speed * 1000) / 2)
 
     balloon.addEventListener('click', () => {
       if (gameOver) return
@@ -150,8 +159,8 @@ export function startBalloonCourse({ courseNumber, totalCourses, onFinish }) {
         mistakes++
         combo = 0
         timeLeft = Math.max(0, timeLeft - 2)
-        message.textContent = '💣 ばくだんだった！'
-        showFloatingText('-2びょう', x, y, '#777')
+        message.textContent = '💣 あぶない！'
+        showFloatingText('-2', x, y, '#777')
       } else if (isCorrect) {
         combo++
 
@@ -162,9 +171,7 @@ export function startBalloonCourse({ courseNumber, totalCourses, onFinish }) {
         if (combo >= 5) add += 3
 
         points += add
-
-        message.textContent =
-          combo >= 5 ? `すごい！${combo}コンボ！` : 'せいかい！'
+        message.textContent = combo >= 5 ? `${combo}コンボ！` : 'OK！'
 
         showFloatingText(`+${add}`, x, y)
         createSparkles(game, x + 24, y + 24)
@@ -172,12 +179,11 @@ export function startBalloonCourse({ courseNumber, totalCourses, onFinish }) {
         mistakes++
         combo = 0
         timeLeft = Math.max(0, timeLeft - 1)
-        message.textContent = `ちがういろ！${targetType.name} をねらってね`
-        showFloatingText('-1びょう', x, y, '#777')
+        message.textContent = 'ちがう！'
+        showFloatingText('-1', x, y, '#777')
       }
 
       updateUI()
-
       setTimeout(() => balloon.remove(), 120)
     })
 
@@ -198,8 +204,8 @@ export function startBalloonCourse({ courseNumber, totalCourses, onFinish }) {
     onFinish(Math.min(65, power))
   }
 
-  const spawnTimer = setInterval(createBalloon, 520)
-  const missionTimer = setInterval(changeMission, 5200)
+  const spawnTimer = setInterval(createBalloon, 500)
+  const missionTimer = setInterval(changeMission, 4800)
 
   const timer = setInterval(() => {
     timeLeft--

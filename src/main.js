@@ -1,226 +1,221 @@
-const app = document.querySelector('#app')
+import './style.css'
+import { addColorPower } from './state.js'
+import {
+  renderHomeLayout,
+  renderGameLayout,
+  showJourneyResult,
+} from './ui.js'
 
-let coins = 0
-let combo = 0
-let level = 1
-let exp = 0
-let timeLeft = 30
-let gameOver = false
+import { startStarCourse } from './courses/starCourse.js'
+import { startGhostCourse } from './courses/ghostCourse.js'
+import { startBalloonCourse } from './courses/balloonCourse.js'
+import { startJewelCourse } from './courses/jewelCourse.js'
+import { startFishCourse } from './courses/fishCourse.js'
+import { startFruitCourse } from './courses/fruitCourse.js'
+import { startRabbitCourse } from './courses/rabbitCourse.js'
+import { startNumberCourse } from './courses/numberCourse.js'
+import { startTargetCourse } from './courses/targetCourse.js'
+import { startGermCourse } from './courses/germCourse.js'
 
-let starSpeed = 700
-let skullChance = 0.1
+const courses = [
+  { name: 'ほしあつめ', icon: '⭐', start: startStarCourse },
+  { name: 'おばけかくれんぼ', icon: '👻', start: startGhostCourse },
+  { name: 'ふうせんタップ', icon: '🎈', start: startBalloonCourse },
+  { name: 'ほうせきさがし', icon: '💎', start: startJewelCourse },
+  { name: 'さかなタップ', icon: '🐟', start: startFishCourse },
+  { name: 'フルーツキャッチ', icon: '🍎', start: startFruitCourse },
+  { name: 'うさぎジャンプ', icon: '🐰', start: startRabbitCourse },
+  { name: 'すうじタッチ', icon: '🔢', start: startNumberCourse },
+  { name: 'まとあて', icon: '🎯', start: startTargetCourse },
+  { name: 'ばいきんけし', icon: '🧼', start: startGermCourse },
+]
 
-app.innerHTML = `
-  <h1>✨ キラキラ星あつめ ✨</h1>
-
-  <div id="status">
-    <p>レベル: <span id="level">1</span></p>
-    <p>EXP: <span id="exp">0</span> / 10</p>
-    <p>コイン: <span id="coins">0</span></p>
-    <p>コンボ: <span id="combo">0</span></p>
-    <p>のこり時間: <span id="time">30</span>秒</p>
-  </div>
-
-  <div id="message">
-    ⭐をたくさんあつめよう！
-  </div>
-
-  <div id="game"></div>
-`
-
-const game = document.querySelector('#game')
-const message = document.querySelector('#message')
-
-game.style.position = 'relative'
-game.style.width = '100%'
-game.style.height = '500px'
-game.style.background = '#fff0f5'
-game.style.border = '4px solid pink'
-game.style.borderRadius = '24px'
-game.style.overflow = 'hidden'
-
-function updateUI() {
-  document.querySelector('#coins').textContent = coins
-  document.querySelector('#combo').textContent = combo
-  document.querySelector('#level').textContent = level
-  document.querySelector('#exp').textContent = exp
-  document.querySelector('#time').textContent = timeLeft
+function shuffle(array) {
+  return [...array].sort(() => Math.random() - 0.5)
 }
 
-function levelUp() {
-  if (exp >= 10) {
-    exp = exp - 10
-    level++
+function showHome() {
+  renderHomeLayout(`
+    <div class="card">
+      <h2>まちに いろを もどそう！</h2>
 
-    message.textContent = `🎉 レベル${level}！`
+      <button class="main-button" id="restoreColorButton">
+        🎨 いろをとりもどす
+      </button>
 
-    // 少しずつ難しく
-    starSpeed = Math.max(300, starSpeed - 50)
-    skullChance = Math.min(0.35, skullChance + 0.03)
-  }
-}
+      <button class="sub-button" id="playCourseButton">
+        🎮 コースをあそぶ
+      </button>
 
-function createStar() {
-  if (gameOver) return
+      <p class="hint">「いろをとりもどす」は、3つのコースにチャレンジするよ。</p>
+      <p class="hint">「コースをあそぶ」は、すきなコースをえらべるよ。</p>
+    </div>
+  `)
 
-  const star = document.createElement('div')
-
-  const random = Math.random()
-
-  let type = 'normal'
-
-  if (random < skullChance) {
-    type = 'fake'
-  } else if (random < skullChance + 0.12) {
-    type = 'rare'
-  }
-
-  if (type === 'fake') {
-    star.textContent = '😈'
-  } else if (type === 'rare') {
-    star.textContent = '🌈'
-  } else {
-    star.textContent = '⭐'
-  }
-
-  star.style.position = 'absolute'
-  star.style.fontSize = '48px'
-  star.style.cursor = 'pointer'
-  star.style.left = Math.random() * 85 + '%'
-  star.style.top = Math.random() * 85 + '%'
-  star.style.transition = 'all 0.5s'
-  star.style.userSelect = 'none'
-
-  game.appendChild(star)
-
-  // フワフワ移動
-  const move = setInterval(() => {
-    star.style.left = Math.random() * 85 + '%'
-    star.style.top = Math.random() * 85 + '%'
-  }, starSpeed)
-
-  // 消える前に変化
-  const transformChance = Math.random() < 0.12
-
-  if (transformChance && type === 'normal') {
-    setTimeout(() => {
-      if (star.parentNode) {
-        star.textContent = '😈'
-        type = 'fake'
-      }
-    }, 1400)
-  }
-
-  star.addEventListener('click', () => {
-    star.style.transform = 'scale(1.4) rotate(15deg)'
-    const rect = star.getBoundingClientRect()
-    const gameRect = game.getBoundingClientRect()
-
-    createSparkles(
-      rect.left - gameRect.left,
-      rect.top - gameRect.top
-    )
-
-    if (type === 'fake') {
-      coins -= 3
-      combo = 0
-      message.textContent = '😈 いたずら星だった！'
-    }
-
-    if (type === 'normal') {
-      coins += 1 + combo
-      combo++
-      exp += 1
-
-      if (combo >= 5) {
-        message.textContent = `🔥 ${combo}コンボ！`
-      } else {
-        message.textContent = '⭐ ナイス！'
-      }
-    }
-
-    if (type === 'rare') {
-      coins += 5 + combo
-      combo++
-      exp += 3
-
-      message.textContent = '🌈 レア星ゲット！'
-    }
-
-    levelUp()
-
-    updateUI()
-
-    clearInterval(move)
-
-    setTimeout(() => {
-      star.remove()
-    }, 150)
+  document.querySelector('#restoreColorButton').addEventListener('click', () => {
+    showJourneyPreview()
   })
 
-  setTimeout(() => {
-    clearInterval(move)
-
-    if (star.parentNode) {
-      star.remove()
-    }
-  }, 2500)
+  document.querySelector('#playCourseButton').addEventListener('click', () => {
+    showCourseSelect()
+  })
 }
 
-const starTimer = setInterval(() => {
-  if (!gameOver) {
-    createStar()
-  }
-}, 650)
+function showCourseSelect() {
+  renderHomeLayout(`
+    <div class="card">
+      <h2>コースをえらぼう！</h2>
 
-const timer = setInterval(() => {
-  timeLeft--
+      <div class="course-grid">
+        ${courses
+          .map(
+            (course, index) => `
+              <button class="course-select-button" data-course-index="${index}">
+                <div class="course-select-icon">${course.icon}</div>
+                <div class="course-select-name">${course.name}</div>
+              </button>
+            `
+          )
+          .join('')}
+      </div>
 
-  updateUI()
+      <button id="backHomeButton">ホームにもどる</button>
+    </div>
+  `)
 
-  if (timeLeft <= 0) {
-    gameOver = true
-
-    clearInterval(timer)
-    clearInterval(starTimer)
-
-    message.textContent =
-      `🎉 ゲーム終了！ ${coins}コイン GET！`
-  }
-}, 1000)
-
-updateUI()
-
-function createSparkles(x, y) {
-  for (let i = 0; i < 10; i++) {
-    const sparkle = document.createElement('div')
-
-    sparkle.textContent = '✨'
-
-    sparkle.style.position = 'absolute'
-    sparkle.style.left = x + 'px'
-    sparkle.style.top = y + 'px'
-    sparkle.style.fontSize = '24px'
-    sparkle.style.pointerEvents = 'none'
-    sparkle.style.transition = 'all 0.8s ease-out'
-
-    game.appendChild(sparkle)
-
-    const angle = Math.random() * Math.PI * 2
-    const distance = 50 + Math.random() * 50
-
-    const moveX = Math.cos(angle) * distance
-    const moveY = Math.sin(angle) * distance
-
-    requestAnimationFrame(() => {
-      sparkle.style.transform =
-        `translate(${moveX}px, ${moveY}px) scale(0.5)`
-
-      sparkle.style.opacity = '0'
+  document.querySelectorAll('.course-select-button').forEach((button) => {
+    button.addEventListener('click', () => {
+      const index = Number(button.dataset.courseIndex)
+      playSingleCourse(courses[index])
     })
+  })
 
-    setTimeout(() => {
-      sparkle.remove()
-    }, 800)
-  }
+  document.querySelector('#backHomeButton').addEventListener('click', showHome)
 }
+
+function playSingleCourse(course) {
+  course.start({
+    courseNumber: 1,
+    totalCourses: 1,
+    onFinish: (power) => {
+      renderGameLayout(`
+        <div class="card course-result-card">
+          <div class="big-emoji">${course.icon}</div>
+          <h2>${course.name} おしまい！</h2>
+          <p class="reward-color">いろパワー +${power}</p>
+
+          <button class="main-button" id="playAgainButton">
+            もういちど
+          </button>
+
+          <button id="backCourseSelectButton">
+            コースをえらぶ
+          </button>
+
+          <button id="backHomeButton">
+            ホームにもどる
+          </button>
+        </div>
+      `)
+
+      document.querySelector('#playAgainButton').addEventListener('click', () => {
+        playSingleCourse(course)
+      })
+
+      document
+        .querySelector('#backCourseSelectButton')
+        .addEventListener('click', showCourseSelect)
+
+      document.querySelector('#backHomeButton').addEventListener('click', showHome)
+    },
+  })
+}
+
+function pickJourneyCourses() {
+  return shuffle(courses).slice(0, 3)
+}
+
+function showJourneyPreview() {
+  const journeyCourses = pickJourneyCourses()
+
+  renderHomeLayout(`
+    <div class="card">
+      <h2>この3つにチャレンジ！</h2>
+
+      <div class="journey-preview">
+        ${journeyCourses
+          .map(
+            (course, index) => `
+              <div class="journey-course">
+                <div class="journey-number">${index + 1}</div>
+                <div class="journey-icon">${course.icon}</div>
+                <div class="journey-name">${course.name}</div>
+              </div>
+            `
+          )
+          .join('')}
+      </div>
+
+      <button class="main-button" id="startJourneyButton">
+        はじめる！
+      </button>
+
+      <button id="backHomeButton">
+        やっぱりやめる
+      </button>
+    </div>
+  `)
+
+  document.querySelector('#startJourneyButton').addEventListener('click', () => {
+    playJourneyCourse(journeyCourses, 0, 0)
+  })
+
+  document.querySelector('#backHomeButton').addEventListener('click', showHome)
+}
+
+function playJourneyCourse(journeyCourses, index, totalPower) {
+  if (index >= journeyCourses.length) {
+    const unlockedColors = addColorPower(totalPower)
+    showJourneyResult(totalPower, unlockedColors, showHome)
+    return
+  }
+
+  const course = journeyCourses[index]
+
+  course.start({
+    courseNumber: index + 1,
+    totalCourses: journeyCourses.length,
+    onFinish: (power) => {
+      showCourseResult({
+        course,
+        power,
+        nextIndex: index + 1,
+        totalCourses: journeyCourses.length,
+        onNext: () => {
+          playJourneyCourse(journeyCourses, index + 1, totalPower + power)
+        },
+      })
+    },
+  })
+}
+
+function showCourseResult({ course, power, nextIndex, totalCourses, onNext }) {
+  const isLast = nextIndex >= totalCourses
+
+  renderGameLayout(`
+    <div class="card course-result-card">
+      <div class="big-emoji">${course.icon}</div>
+      <h2>${course.name} おしまい！</h2>
+      <p class="reward-color">いろパワー +${power}</p>
+      <p>${nextIndex} / ${totalCourses} コース おわったよ</p>
+
+      <button class="main-button" id="nextCourseButton">
+        ${isLast ? 'けっかをみる' : 'つぎのコースへ'}
+      </button>
+    </div>
+  `)
+
+  document.querySelector('#nextCourseButton').addEventListener('click', onNext)
+}
+
+showHome()
