@@ -39,6 +39,7 @@ export function startNumberCourse({ courseNumber, totalCourses, onFinish }) {
     for (let i = 0; i < 12; i++) {
       numbers.push(Math.floor(Math.random() * 9) + 1)
     }
+    
 
     numbers[Math.floor(Math.random() * numbers.length)] = targetNumber
 
