@@ -1,18 +1,21 @@
-import { renderLayout, showResult, createSparkles } from '../ui.js'
+import { renderGameLayout, createSparkles } from '../ui.js'
 
-export function startStarCourse(showHome) {
-  let timeLeft = 30
-  let score = 0
+export function startStarCourse({ courseNumber, totalCourses, onFinish }) {
+  let timeLeft = 25
+  let starsCollected = 0
+  const targetStars = 12
   let combo = 0
   let gameOver = false
   let starSpeed = 700
   let trickyChance = 0.1
 
-  renderLayout(`
+  renderGameLayout(`
     <div class="card">
+      <p class="course-count">コース ${courseNumber} / ${totalCourses}</p>
       <h2>⭐ きらきらほしあつめ</h2>
-      <p>てんすう: <b id="score">0</b> / コンボ: <b id="combo">0</b></p>
-      <p>のこりじかん: <b id="time">30</b>びょう</p>
+      <p>あつめたほし: <b id="starsCollected">0</b> / ${targetStars}</p>
+      <p>コンボ: <b id="combo">0</b></p>
+      <p>のこりじかん: <b id="time">25</b>びょう</p>
       <div id="message">⭐をあつめよう！😈はさわらないでね</div>
       <div id="game"></div>
     </div>
@@ -22,9 +25,19 @@ export function startStarCourse(showHome) {
   const message = document.querySelector('#message')
 
   function updateGameUI() {
-    document.querySelector('#score').textContent = score
+    document.querySelector('#starsCollected').textContent = starsCollected
     document.querySelector('#combo').textContent = combo
     document.querySelector('#time').textContent = timeLeft
+  }
+
+  function finishCourse() {
+    if (gameOver) return
+    gameOver = true
+    clearInterval(starTimer)
+    clearInterval(timer)
+
+    const power = Math.min(50, 10 + starsCollected * 3 + combo)
+    onFinish(power)
   }
 
   function createStar() {
@@ -66,21 +79,20 @@ export function startStarCourse(showHome) {
     star.addEventListener('click', () => {
       const rect = star.getBoundingClientRect()
       const gameRect = game.getBoundingClientRect()
-
       createSparkles(game, rect.left - gameRect.left, rect.top - gameRect.top)
 
       star.style.transform = 'scale(1.4) rotate(15deg)'
 
       if (type === 'fake') {
-        score = Math.max(0, score - 3)
         combo = 0
+        timeLeft = Math.max(0, timeLeft - 2)
         message.textContent = '😈 いたずらぼしだった！'
       } else if (type === 'rare') {
-        score += 5 + combo
+        starsCollected += 2
         combo++
-        message.textContent = '🌈 レアぼしゲット！'
+        message.textContent = '🌈 レアぼし！ほし2こぶん！'
       } else {
-        score += 1 + combo
+        starsCollected++
         combo++
         message.textContent = combo >= 5 ? `🔥 ${combo}コンボ！` : '⭐ いいね！'
       }
@@ -92,6 +104,10 @@ export function startStarCourse(showHome) {
       clearInterval(move)
 
       setTimeout(() => star.remove(), 120)
+
+      if (starsCollected >= targetStars) {
+        setTimeout(finishCourse, 250)
+      }
     })
 
     setTimeout(() => {
@@ -107,14 +123,7 @@ export function startStarCourse(showHome) {
     updateGameUI()
 
     if (timeLeft <= 0) {
-      gameOver = true
-      clearInterval(timer)
-      clearInterval(starTimer)
-
-      const rewardCoins = Math.max(5, Math.floor(score / 2))
-      const rewardExp = Math.max(2, Math.floor(score / 10))
-
-      showResult('⭐ ほしあつめクリア！', rewardCoins, rewardExp, showHome)
+      finishCourse()
     }
   }, 1000)
 

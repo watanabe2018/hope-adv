@@ -1,18 +1,19 @@
-import { renderLayout, showResult } from '../ui.js'
+import { renderGameLayout } from '../ui.js'
 
-export function startGhostCourse(showHome) {
-  let timeLeft = 30
+export function startGhostCourse({ courseNumber, totalCourses, onFinish }) {
+  let timeLeft = 25
   let ghostsFound = 0
-  let targetGhosts = 3
-  let rewardScore = 0
+  const targetGhosts = 3
+  let mistakes = 0
   let gameOver = false
 
-  renderLayout(`
+  renderGameLayout(`
     <div class="card">
+      <p class="course-count">コース ${courseNumber} / ${totalCourses}</p>
       <h2>👻 おばけかくれんぼ</h2>
       <p>みつけたおばけ: <b id="ghostsFound">0</b> / ${targetGhosts}</p>
-      <p>のこりじかん: <b id="time">30</b>びょう</p>
-      <div id="message">☁️のなかのおばけをみつけよう！</div>
+      <p>のこりじかん: <b id="time">25</b>びょう</p>
+      <div id="message">☁️のなかのおばけを${targetGhosts}びき みつけよう！</div>
       <div id="cloudGame"></div>
     </div>
   `)
@@ -23,6 +24,15 @@ export function startGhostCourse(showHome) {
   function updateGhostUI() {
     document.querySelector('#ghostsFound').textContent = ghostsFound
     document.querySelector('#time').textContent = timeLeft
+  }
+
+  function finishCourse() {
+    if (gameOver) return
+    gameOver = true
+    clearInterval(timer)
+
+    const power = Math.max(10, 35 + ghostsFound * 8 - mistakes * 3 + timeLeft)
+    onFinish(Math.min(55, power))
   }
 
   function createCloudRound() {
@@ -49,15 +59,14 @@ export function startGhostCourse(showHome) {
         if (isRareGhost) {
           cloud.textContent = '🌈👻'
           ghostsFound++
-          rewardScore += 15
           message.textContent = '🌈 レアおばけみっけ！'
         } else if (isGhost) {
           cloud.textContent = '👻'
           ghostsFound++
-          rewardScore += 5
           message.textContent = '👻 おばけみっけ！'
         } else {
           cloud.textContent = '💨'
+          mistakes++
           timeLeft = Math.max(0, timeLeft - 1)
           message.textContent = 'あれれ？いなかった！'
         }
@@ -66,8 +75,7 @@ export function startGhostCourse(showHome) {
         updateGhostUI()
 
         if (ghostsFound >= targetGhosts) {
-          gameOver = true
-          showResult('👻 おばけかくれんぼクリア！', Math.max(5, rewardScore), 5, showHome)
+          setTimeout(finishCourse, 250)
           return
         }
 
@@ -85,10 +93,7 @@ export function startGhostCourse(showHome) {
     updateGhostUI()
 
     if (timeLeft <= 0) {
-      gameOver = true
-      clearInterval(timer)
-
-      showResult('⏰ おばけさがしおしまい！', Math.max(3, Math.floor(rewardScore / 2)), 2, showHome)
+      finishCourse()
     }
   }, 1000)
 
